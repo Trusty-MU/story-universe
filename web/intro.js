@@ -1,4 +1,4 @@
-// Story Universe: the animated loading screen and the "how it works" tutorial.
+// Campfire: the animated loading screen and the "how it works" tutorial.
 // The splash markup lives in index.html so it paints before any script or font loads.
 // The tutorial shows every time the app opens unless a parent switches it off on the last card.
 
@@ -37,7 +37,7 @@ const SLIDES = [
   {
     kick: "1 · Told",
     title: "Add a new story idea",
-    body: "Tap Tell and say it or type it. Anyone in the family can add one. Story Universe says the idea back so you know it was heard right.",
+    body: "Tap Tell and say it or type it. Anyone in the family can add one. Campfire says the idea back so you know it was heard right.",
     art: `<div class="ti-art ti-tell">
       <div class="ti-mic">${MIC}<span class="ti-ring"></span><span class="ti-ring r2"></span></div>
       <div class="ti-bubble"><span>A goose</span> <span>with a very</span> <span>long scarf…</span></div>
@@ -88,7 +88,7 @@ export function showTutorial({ force = false } = {}) {
     root.id = "tutorial";
     root.setAttribute("role", "dialog");
     root.setAttribute("aria-modal", "true");
-    root.setAttribute("aria-label", "How Story Universe works");
+    root.setAttribute("aria-label", "How Campfire works");
     document.body.appendChild(root);
     let i = 0;
 

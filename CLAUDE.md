@@ -1,6 +1,6 @@
 # Story Universe: handoff for Claude Code
 
-A family app for Blake: turn his kids' story ideas into ongoing "universes" with reviewed chapters, multi-voice narrated episodes, short theme songs and book covers. MVP is for one family only: no logins, no payments, parent-operated, played over a speaker.
+The app is called **Campfire** in everything the family sees (title, home screen, splash); the repo, Supabase project and code names stay "Story Universe". A family app for Blake: turn his kids' story ideas into ongoing "universes" with reviewed chapters, multi-voice narrated episodes, short theme songs and book covers. MVP is for one family only: no logins, no payments, parent-operated, played over a speaker.
 
 - Living MVP spec (Claude Docs): https://claude.ai/artifact/8aGwjQ7r9QdGwEzS1YnT3J
 - Claude project "Kids Story App" has `claude/product-discovery-notes.md` with all product decisions and parked ideas.

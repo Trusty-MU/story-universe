@@ -1,6 +1,6 @@
 {
-  "name": "Story Universe",
-  "short_name": "Stories",
+  "name": "Campfire",
+  "short_name": "Campfire",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -1,4 +1,4 @@
-// Story Universe: mobile web app, Campfire design (Direction B: the story path).
+// Campfire: mobile web app, Campfire design (Direction B: the story path).
 // Static, no build step. Talks only to the `story`, `produce` and `family` Edge Functions.
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 import { hideSplash, showTutorial } from "./intro.js";
@@ -367,7 +367,7 @@ function screenLock(message = "") {
   setDock("");
   view.innerHTML = `<form class="lock" id="lock" autocomplete="on">
     <img class="mark" src="icon.svg" alt="" style="width:72px;height:72px">
-    <div class="title-block" style="margin:0"><h1>Story Universe</h1><p class="soft" style="margin:0">Enter the family passcode.</p></div>
+    <div class="title-block" style="margin:0"><h1>Campfire</h1><p class="soft" style="margin:0">Enter the family passcode.</p></div>
     <input type="text" name="username" value="family" autocomplete="username" hidden>
     <label class="field"><span>Family passcode</span>
       <input type="password" id="pc" autocomplete="current-password" inputmode="text" required autofocus></label>
@@ -408,7 +408,7 @@ async function screenTonight() {
     });
     view.innerHTML = `
       <div class="title-block"><div class="kick">${esc(dayKicker())}</div>
-        <h1>${kids.length ? `${esc(namesList(kids))} ${kids.length === 1 ? "is" : "are"} ready.` : "Story Universe"}</h1></div>
+        <h1>${kids.length ? `${esc(namesList(kids))} ${kids.length === 1 ? "is" : "are"} ready.` : "Campfire"}</h1></div>
       ${upNext ? `<a class="card tap" href="#/play/${upNext.c.id}" style="display:flex;gap:14px;align-items:center">
           ${coverTile(upNext.u, upNext.ui, "small")}
           <span class="grow"><span class="badge pine"><span class="dot" style="background:var(--pine)"></span>Play next</span>
@@ -1029,8 +1029,8 @@ function setMediaSession(ch) {
   if (!("mediaSession" in navigator)) return;
   navigator.mediaSession.metadata = new MediaMetadata({
     title: `Chapter ${ch.number}. ${ch.title ?? ""}`,
-    artist: ch.universe_title ?? "Story Universe",
-    album: "Story Universe",
+    artist: ch.universe_title ?? "Campfire",
+    album: "Campfire",
     artwork: ch.cover_url ? [{ src: ch.cover_url, sizes: "1024x1536", type: "image/png" }] : [],
   });
   navigator.mediaSession.setActionHandler("play", () => audio.play());
