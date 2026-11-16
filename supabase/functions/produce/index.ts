@@ -60,8 +60,11 @@ async function narrate(p: { chapter_id: string; max_lines?: number }) {
   if (!u?.narrator_voice_id) throw new Error("Pick a narrator voice for this universe first");
 
   const lines = (ch.script as Line[]).slice(0, p.max_lines ?? 10_000);
-  const parts: Uint8Array[] = [];
-  for (const group of chunk(lines)) {
+  // Run up to 3 ElevenLabs requests at once (Starter plan concurrency) to stay under the
+  // ~150 s request limit, then join the parts in script order.
+  const groups = chunk(lines);
+  const parts: Uint8Array[] = new Array(groups.length);
+  const speak = async (group: Line[]) => {
     const r = await fetch("https://api.elevenlabs.io/v1/text-to-dialogue?output_format=mp3_44100_128", {
       method: "POST",
       headers: { "xi-api-key": ELEVEN, "Content-Type": "application/json" },
@@ -72,8 +75,13 @@ async function narrate(p: { chapter_id: string; max_lines?: number }) {
       }),
     });
     if (!r.ok) throw new Error(`ElevenLabs ${r.status}: ${(await r.text()).slice(0, 400)}`);
-    parts.push(new Uint8Array(await r.arrayBuffer()));
-  }
+    return new Uint8Array(await r.arrayBuffer());
+  };
+  let next = 0;
+  const worker = async () => {
+    while (next < groups.length) { const i = next++; parts[i] = await speak(groups[i]); }
+  };
+  await Promise.all(Array.from({ length: Math.min(3, groups.length) }, worker));
   // MP3 frames can be concatenated directly.
   const total = parts.reduce((n, b) => n + b.length, 0);
   const audio = new Uint8Array(total);
@@ -117,7 +125,31 @@ Warm, gentle and inviting for children ages 1 to 7. Nothing scary. Put the title
   return { cover_id: row?.id, path, url: await signed("covers", path), usage: j.usage ?? null };
 }
 
+// Signed URLs the app needs: the current cover of every universe, plus a chapter's audio.
+// Cover: the chosen one, else the newest. Missing files come back as null.
+async function media(p: { chapter_id?: string }) {
+  const trySign = async (bucket: string, path?: string | null) => {
+    if (!path) return null;
+    const { data } = await sb.storage.from(bucket).createSignedUrl(path, 60 * 60 * 24 * 7);
+    return data?.signedUrl ?? null;
+  };
+  const { data: rows } = await sb.from("covers").select("universe_id,image_path")
+    .order("chosen", { ascending: false }).order("created_at", { ascending: false });
+  const covers: Record<string, string | null> = {};
+  for (const r of rows ?? []) if (!(r.universe_id in covers)) covers[r.universe_id] = await trySign("covers", r.image_path);
+  let audio_url = null, preview_url = null;
+  if (p.chapter_id) {
+    const { data: ch } = await sb.from("chapters").select("universe_id,number,audio_path").eq("id", p.chapter_id).single();
+    if (ch) {
+      audio_url = await trySign("audio", ch.audio_path);
+      preview_url = await trySign("audio", `${ch.universe_id}/chapter-${ch.number}-preview.mp3`);
+    }
+  }
+  return { covers, audio_url, preview_url };
+}
+
 const ACTIONS: Record<string, (p: any) => Promise<unknown>> = {
+  media,
   list_voices: listVoices,
   cast_voices: castVoices,
   narrate,

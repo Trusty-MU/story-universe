@@ -1,0 +1,10 @@
+{
+  "name": "Story Universe",
+  "short_name": "Stories",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#14131f",
+  "theme_color": "#14131f",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
