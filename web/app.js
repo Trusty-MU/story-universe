@@ -1,7 +1,7 @@
 // Campfire: mobile web app, Campfire design (Direction B: the story path).
 // Static, no build step. Talks only to the `story`, `produce` and `family` Edge Functions.
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
-import { hideSplash, showTutorial } from "./intro.js";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js?v=__V__";
+import { hideSplash, showTutorial } from "./intro.js?v=__V__";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
