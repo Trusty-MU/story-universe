@@ -1,6 +1,7 @@
 // Story Universe: mobile web app, Campfire design (Direction B: the story path).
 // Static, no build step. Talks only to the `story`, `produce` and `family` Edge Functions.
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+import { hideSplash, showTutorial } from "./intro.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -422,8 +423,9 @@ async function screenTonight() {
         <span class="ico" style="background:var(--flame);color:var(--bark)">${ICON.idea}</span>
         <span class="grow"><span class="t">Got a new idea?</span><span class="s">Hand the phone over and let them tell it.</span></span>${ICON.chev}</a>
       ${!universes.length ? `<p class="soft" style="margin-top:18px">No universes yet. The first idea starts one.</p>` : ""}
-      <p style="margin-top:36px"><button class="link" id="lockNow">Lock the app</button></p>`;
+      <p style="margin-top:36px;display:flex;gap:24px;flex-wrap:wrap"><button class="link" id="howTo">How it works</button><button class="link" id="lockNow">Lock the app</button></p>`;
     $("#lockNow").onclick = () => { store.del("passcode"); route(); };
+    $("#howTo").onclick = () => showTutorial({ force: true });
   };
   if (cache.universes) draw(cache.universes, cache.family);
   try {
@@ -1140,4 +1142,5 @@ async function route() {
 }
 
 window.addEventListener("hashchange", route);
-route();
+// Splash until the first screen has its data (min 1.5 s), then the tutorial on top.
+hideSplash(route()).then(() => showTutorial());
