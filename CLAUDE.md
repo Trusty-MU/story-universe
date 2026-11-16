@@ -12,7 +12,7 @@ The app is called **Campfire** in everything the family sees (title, home screen
 - Bedtime mode: calm, no cliffhangers, sleepy ending.
 
 ## Brand: Campfire (keep every screen, prompt and doc consistent with this)
-- **Name and idea.** The app is Campfire. Every family has a campfire: the circle where the same stories get told again and again. Campfire brings that circle to bedtime, even on nights someone is far from home. It's about the people you love inside stories that become memories, not about the software.
+- **Name and idea.** The app is Campfire. People have always gathered round a fire to be together and share stories; that circle is the heart of the brand. Campfire brings that circle to bedtime, even on nights someone is far from home. It's about the people you love inside stories that become memories, not about the software.
 - **Who it's for.** Grown-ups run it (Mom at home, Dad traveling, later grandparents); kids are the listeners and often the idea-makers. **Anyone in the family can start a story**: a kid's wild idea, a lesson a parent wants to teach, something from today. Never write copy that assumes only a kid (or only a parent) tells the idea. Say "add a story idea", "anyone can start a story".
 - **What it makes possible (the big picture to keep telling):** ongoing universes that remember characters, places and quests; lessons and real life woven in (kindness, courage, school topics, Dad's travels); a short theme song per universe (not built yet; copy says "can have"); a grown-up check before anything plays; one voice per character; a Library the kids keep when they're grown.
 - **Core loop and words.** Tell → Written → Checked → Recorded (the 4-stop "story path" shown on every chapter). Words we use: Tell, Chapter, Universe, Library, Crew, Goodnight, Gather round. Words we never use: generate, content, AI-powered, magic, personalized, engagement, screen time, smart, seamless, unlock, empower.
@@ -20,7 +20,7 @@ The app is called **Campfire** in everything the family sees (title, home screen
 - **The AI line, said plainly, once (tutorial card 5):** "You give the idea, the people and the lesson. Campfire uses AI to write it down and read it aloud, like a scribe. It never makes up a story on its own." A grown-up hears every chapter first.
 - **Visual system.** Campfire Design System (Blake's): https://claude.ai/artifact/9wWUgU1QxuEhkKtjdXqqZ4. Paper `#fbf3e4` ground, Bark `#4a3323` text, Ember `#f0632b` one primary action per screen, Flame `#ffb703`, Pine `#2e7d5b` done/approved, Lake `#2d7fb8` links/away, Night `#1b2233` only while a story plays (with the ember glow). Fredoka display, Figtree body, Fraunces for story text only. Flat: no shadows, no gradients except the ember glow; pills for anything pressable; flat paper-cut shapes for illustration. UI directions canvas (B was chosen): https://claude.ai/artifact/DJFvZSDah3p3Ps1h67Z9iF.
 - **Tutorial storyboard (`web/intro.js`), the pitch and the how-to in one, shown on every app open unless switched off:**
-  1. *Why Campfire* (night): "Every family has a campfire." Family circle gathers round a fire under the stars.
+  1. *Why Campfire* (night): "People have always gathered round a fire." Family circle gathers round a fire under the stars; Campfire brings that circle to bedtime.
   2. *1 · Tell*: "Anyone can start a story." Bubbles from kids and grown-ups.
   3. *2 · Written*: "Every story becomes a universe." Chapters fan out behind a cover; quest steps fill.
   4. *Make it yours*: "Lessons inside. Songs to sing along."
