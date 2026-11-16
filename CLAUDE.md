@@ -34,6 +34,9 @@ Actions: `media` (signed URLs: current cover per universe, plus `audio_url`/`pre
 - Covers: OpenAI `gpt-image-2.5-sunburst`, 1024x1536, medium quality, PNG; returns base64 only.
 - Not built yet: theme songs (ElevenLabs Music with section plan + length cap ~1:30 to 2:30; Suno as copy-paste), kids' photos as cover references, safety review of image prompts and lyrics.
 
+### `family` (supabase/functions/family/index.ts)
+Actions: `list` (kids first, youngest first, then parents and others), `add` (`{name, role: kid|parent|other, birth_month?: 'YYYY-MM', notes?}`; validates, friendly error on duplicate names), `update` (`{id, ...fields}`). Same passcode check. The app uses it for the family chips and the "+ Add someone" sheet on Capture and Chapter studio.
+
 ### `check-secrets`
 Reports only whether each secret is set. Safe to delete later.
 
@@ -50,3 +53,4 @@ Universe "The Lamplighters of Pebble Point" (`99f5f72a-f033-4506-b699-ebcdf3c1b8
 4. Theme songs (ElevenLabs Music), then voice design for kid voices, optional Blake narrator voice.
 5. Import past stories from ChatGPT and Claude data exports plus Suno MP3s (Blake will provide later).
 6. Measure cost per full episode (Claude + ElevenLabs credits + image).
+7. story `create_universe` prompt hardcodes "Include Levi, Lydia and Luke"; new kids added via the `family` function won't be auto-included until that prompt reads kids from `family_members`.

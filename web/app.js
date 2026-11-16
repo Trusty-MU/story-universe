@@ -84,10 +84,11 @@ async function call(fn, action, params = {}) {
 }
 const story = (action, params) => call("story", action, params);
 const produce = (action, params) => call("produce", action, params);
+const familyApi = (action, params) => call("family", action, params);
 
 // Light cache so tab switches feel instant; screens refresh in the background.
 const cache = { universes: null, family: null, voices: null, covers: null };
-async function getFamily() { return (cache.family ??= await story("family")); }
+async function getFamily() { return (cache.family ??= await familyApi("list")); }
 async function getCovers(fresh = false) {
   if (fresh || !cache.covers) cache.covers = (await produce("media")).covers;
   return cache.covers;
@@ -164,6 +165,60 @@ function confirmSheet({ title, body, ok = "OK", cancel = "Cancel", danger = fals
   });
 }
 
+// Add a family member. Resolves to the new member, or null if cancelled.
+function addPersonSheet(presetRole = "kid") {
+  return new Promise((resolve) => {
+    let role = presetRole;
+    sheet.hidden = false;
+    sheet.innerHTML = `<form class="panel stack" role="dialog" aria-modal="true" aria-labelledby="ap-title" id="ap">
+      <h3 id="ap-title">Add someone to the family</h3>
+      <label class="field"><span>Name</span>
+        <input type="text" id="ap-name" maxlength="40" autocomplete="off" autocapitalize="words" enterkeyhint="next" required></label>
+      <div><span style="display:block;font-weight:600;margin-bottom:6px">Who are they?</span>
+        <div class="seg" id="ap-role">${[["kid", "Kid"], ["parent", "Parent"], ["other", "Other"]].map(([v, l]) =>
+          `<button type="button" data-role="${v}" aria-pressed="${v === role}">${l}</button>`).join("")}</div></div>
+      <label class="field" id="ap-bm-wrap"><span>Birth month <span class="muted small">(optional, sets the story's age level)</span></span>
+        <input type="month" id="ap-bm" max="${new Date().toISOString().slice(0, 7)}"></label>
+      <label class="field"><span>Notes <span class="muted small">(optional)</span></span>
+        <input type="text" id="ap-notes" maxlength="500" placeholder="e.g. Grandma, lives in Texas, loves birds"></label>
+      <button class="btn" type="submit" id="ap-save">Add to family</button>
+      <button class="btn secondary" type="button" data-cancel>Cancel</button></form>`;
+    const done = (v) => { sheet.onclick = null; sheet.hidden = true; sheet.innerHTML = ""; resolve(v); };
+    const syncRole = () => {
+      $$("#ap-role [data-role]", sheet).forEach((b) => b.setAttribute("aria-pressed", b.dataset.role === role));
+      $("#ap-bm-wrap", sheet).classList.toggle("hidden", role !== "kid");
+    };
+    $$("#ap-role [data-role]", sheet).forEach((b) => (b.onclick = () => { role = b.dataset.role; syncRole(); }));
+    syncRole();
+    $("[data-cancel]", sheet).onclick = () => done(null);
+    sheet.onclick = (e) => { if (e.target === sheet) done(null); };
+    $("#ap", sheet).onsubmit = async (e) => {
+      e.preventDefault();
+      const name = $("#ap-name", sheet).value.trim();
+      if (!name) return $("#ap-name", sheet).focus();
+      const save = $("#ap-save", sheet);
+      save.disabled = true;
+      save.textContent = "Adding…";
+      try {
+        const member = await familyApi("add", {
+          name, role,
+          birth_month: role === "kid" ? $("#ap-bm", sheet).value || undefined : undefined,
+          notes: $("#ap-notes", sheet).value.trim() || undefined,
+        });
+        cache.family = null;
+        toast(`${member.name} added`);
+        done(member);
+      } catch (err) {
+        if (err instanceof PasscodeError) { done(null); store.del("passcode"); return route(); }
+        toast(err.message || String(err), true);
+        save.disabled = false;
+        save.textContent = "Add to family";
+      }
+    };
+    setTimeout(() => $("#ap-name", sheet)?.focus(), 50);
+  });
+}
+
 // Run an action with consistent error handling.
 async function attempt(fn) {
   try { return await fn(); }
@@ -218,7 +273,7 @@ function screenLock(message = "") {
     if (!pc) return;
     store.set("passcode", pc);
     try {
-      cache.family = await story("family");
+      cache.family = await familyApi("list");
       document.body.classList.remove("locked");
       route();
     } catch (err) {
@@ -280,7 +335,7 @@ async function screenCapture() {
   let fam, universes;
   try { [fam, universes] = await Promise.all([getFamily(), getUniverses()]); }
   catch (e) { if (e instanceof PasscodeError) { store.del("passcode"); return route(); } return errorView(e, screenCapture); }
-  const kids = fam.filter((m) => m.role === "kid");
+  let people = fam; // kids first, then parents and others (sorted by the family function)
   const d = captureDraft();
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -288,8 +343,9 @@ async function screenCapture() {
     const r = d.restated;
     view.innerHTML = `
       <div class="eyebrow">Capture</div><h1>Whose idea is it?</h1>
-      <div class="chips" style="margin-top:14px" id="kids">${kids.map((k) =>
-        `<button class="chip" aria-pressed="${d.kid === k.name}" data-kid="${esc(k.name)}">${esc(k.name)}</button>`).join("")}</div>
+      <div class="chips" style="margin-top:14px" id="kids">${people.map((k) =>
+        `<button class="chip" aria-pressed="${d.kid === k.name}" data-kid="${esc(k.name)}">${esc(k.name)}</button>`).join("")}
+        <button class="chip add" id="addPerson">+ Add someone</button></div>
       <h2>What's the idea?</h2>
       <label class="field"><span class="hidden">Idea</span>
         <textarea id="idea" rows="6" placeholder="Type it, tap the mic and let them talk, or use the keyboard's dictation.">${esc(d.text)}</textarea></label>
@@ -316,6 +372,12 @@ async function screenCapture() {
         <button class="btn ghost small" id="clear" style="margin-top:20px">Clear and start over</button>` : ""}`;
 
     $$("#kids [data-kid]").forEach((b) => (b.onclick = () => { d.kid = d.kid === b.dataset.kid ? "" : b.dataset.kid; d.restated = null; saveCapture(d); draw(); }));
+    $("#addPerson").onclick = async () => {
+      const m = await addPersonSheet("kid");
+      if (!m) return;
+      try { people = await getFamily(); } catch { people = [...people, m]; }
+      d.kid = m.name; d.restated = null; saveCapture(d); draw();
+    };
     const ta = $("#idea");
     ta.oninput = () => { d.text = ta.value; saveCapture(d); };
     if (r) {
@@ -489,7 +551,7 @@ async function screenStudio(id) {
   let u, fam;
   try { [u, fam] = await Promise.all([getUniverse(id), getFamily()]); }
   catch (e) { if (e instanceof PasscodeError) { store.del("passcode"); return route(); } return errorView(e, () => screenStudio(id)); }
-  const kids = fam.filter((m) => m.role === "kid");
+  let kids = fam.filter((m) => m.role === "kid");
   const pending = store.get("pendingIdea");
   const mainDefault = pending?.kid || kids.find((k) => k.id === u.main_kid_id)?.name || "";
   const brief = { main_kid: mainDefault, bedtime: isBedtimeHour(), length: "", idea: pending?.text ?? "", real_life: [], notes: "" };
@@ -503,7 +565,7 @@ async function screenStudio(id) {
   view.innerHTML = `
     <div class="eyebrow">${esc(u.title)}</div><h1>Chapter ${next}</h1>
     <h2>Who is it for?</h2>
-    <div class="chips" id="kids">${kids.map((k) => `<button class="chip" data-kid="${esc(k.name)}" aria-pressed="${brief.main_kid === k.name}">${esc(k.name)}</button>`).join("")}</div>
+    <div class="chips" id="kids"></div>
     <div class="card" style="margin-top:20px">
       <label class="switch"><span><b>Bedtime</b><br><span class="small muted">Calm, cozy, no cliffhanger</span></span>
         <input type="checkbox" id="bedtime" ${brief.bedtime ? "checked" : ""}></label></div>
@@ -522,10 +584,22 @@ async function screenStudio(id) {
     <textarea id="notes" rows="3" placeholder="Optional"></textarea>`;
   drawRealLife();
 
-  $$("#kids [data-kid]").forEach((b) => (b.onclick = () => {
-    brief.main_kid = brief.main_kid === b.dataset.kid ? "" : b.dataset.kid;
-    $$("#kids [data-kid]").forEach((x) => x.setAttribute("aria-pressed", x.dataset.kid === brief.main_kid));
-  }));
+  const drawKids = () => {
+    $("#kids").innerHTML = kids.map((k) => `<button class="chip" data-kid="${esc(k.name)}" aria-pressed="${brief.main_kid === k.name}">${esc(k.name)}</button>`).join("") +
+      `<button class="chip add" id="addKid">+ Add someone</button>`;
+    $$("#kids [data-kid]").forEach((b) => (b.onclick = () => {
+      brief.main_kid = brief.main_kid === b.dataset.kid ? "" : b.dataset.kid;
+      $$("#kids [data-kid]").forEach((x) => x.setAttribute("aria-pressed", x.dataset.kid === brief.main_kid));
+    }));
+    $("#addKid").onclick = async () => {
+      const m = await addPersonSheet("kid");
+      if (!m) return;
+      try { kids = (await getFamily()).filter((x) => x.role === "kid"); } catch { if (m.role === "kid") kids = [...kids, m]; }
+      if (m.role === "kid") brief.main_kid = m.name;
+      drawKids();
+    };
+  };
+  drawKids();
   $$("#len [data-len]").forEach((b) => (b.onclick = () => {
     brief.length = b.dataset.len;
     $$("#len [data-len]").forEach((x) => x.setAttribute("aria-pressed", x === b));

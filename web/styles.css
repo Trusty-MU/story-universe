@@ -111,7 +111,7 @@ a { color: inherit; }
 /* Forms */
 label.field { display: block; }
 label.field > span { display: block; font-weight: 600; margin-bottom: 6px; }
-input[type=text], input[type=password], textarea, select {
+input[type=text], input[type=password], input[type=month], textarea, select {
   width: 100%; font: inherit; color: var(--ink); background: var(--surface); border: 1.5px solid var(--line);
   border-radius: 14px; padding: 13px 14px; min-height: 52px;
 }
@@ -123,6 +123,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
   border-radius: 999px; padding: 10px 16px; min-height: 46px; cursor: pointer;
 }
 .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip.add { border-style: dashed; color: var(--ink-2); background: transparent; }
 .chip.tag { min-height: 36px; padding: 6px 12px; font-size: 14px; }
 .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--surface-2); border-radius: 14px; padding: 4px; gap: 4px; }
 .seg button { font: inherit; border: 0; background: transparent; color: var(--ink); border-radius: 10px; min-height: 44px; }
