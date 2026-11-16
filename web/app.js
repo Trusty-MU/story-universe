@@ -211,7 +211,8 @@ async function busy(steps, opts = {}) {
   sheet.onclick = null;
   holdAwake(true);
   const start = Date.now();
-  const prompt = opts.kid ? KID_PROMPTS[Math.floor(Math.random() * KID_PROMPTS.length)] : null;
+  const isKid = (cache.family ?? []).some((m) => m.name === opts.kid && m.role === "kid");
+  const prompt = opts.kid && isKid ? KID_PROMPTS[Math.floor(Math.random() * KID_PROMPTS.length)] : null;
   let result;
   try {
     for (let i = 0; i < steps.length; i++) {
@@ -421,7 +422,7 @@ async function screenTonight() {
       }).join("")}</div>` : ""}
       <a class="feature tap" href="#/tell" style="background:var(--flame-tint);margin-top:${waiting.length || upNext ? 24 : 0}px">
         <span class="ico" style="background:var(--flame);color:var(--bark)">${ICON.idea}</span>
-        <span class="grow"><span class="t">Got a new idea?</span><span class="s">Hand the phone over and let them tell it.</span></span>${ICON.chev}</a>
+        <span class="grow"><span class="t">Got a new idea?</span><span class="s">Say it or type it in Tell.</span></span>${ICON.chev}</a>
       ${!universes.length ? `<p class="soft" style="margin-top:18px">No universes yet. The first idea starts one.</p>` : ""}
       <p style="margin-top:36px;display:flex;gap:24px;flex-wrap:wrap"><button class="link" id="howTo">How it works</button><button class="link" id="lockNow">Lock the app</button></p>`;
     $("#lockNow").onclick = () => { store.del("passcode"); route(); };
@@ -455,7 +456,7 @@ async function screenLibrary() {
             <span style="font:600 17px/1.15 var(--display)">${esc(u.title)}</span>
             <span class="bs">${(u.chapters ?? []).length} chapter${(u.chapters ?? []).length === 1 ? "" : "s"}</span></a>`).join("")}
           <a class="book tap" href="#/tell"><span class="new"><span class="icon-btn" style="width:52px;height:52px">${ICON.plus}</span>Start a new universe</span>
-            <span class="bs">From a kid's idea</span></a></div>`
+            <span class="bs">From a new idea</span></a></div>`
         : episodes.length ? `<div class="list">${episodes.map(({ u, c, ui }) => `
           <a class="card tap" href="#/play/${c.id}" style="display:flex;gap:14px;align-items:center;padding:12px 14px">${coverTile(u, ui, "small")}
             <span class="grow"><span style="display:block;font-weight:700">Chapter ${c.number}. ${esc(c.title)}</span>
@@ -618,7 +619,7 @@ async function screenStudio(id) {
     <div class="seg" id="len">${[["", "Auto"], ["short", "Short"], ["medium", "Medium"], ["long", "Long"]].map(([v, l]) =>
       `<button data-len="${v}" aria-pressed="${brief.length === v}">${l}</button>`).join("")}</div>
     <p class="soft small" style="margin-top:8px">Auto fits the listener's age.</p>
-    <h2>The kid's idea</h2>
+    <h2>The idea</h2>
     <textarea id="idea" rows="4" placeholder="Leave empty to just carry on the story">${esc(pendingHere ? pending.text ?? "" : "")}</textarea>
     <h2>From real life</h2>
     <p class="soft small">Lessons, school topics, where Dad is this week. Woven in, never a lecture.</p>
@@ -861,7 +862,7 @@ async function screenTell() {
       </div>
       <div class="card stack" style="margin-top:16px">
         <div class="kick" style="color:${rec ? "var(--pine)" : "var(--bark-soft)"}">${rec ? `Listening${d.kid ? ` to ${esc(d.kid)}` : ""}` : "The idea"}</div>
-        <label><span class="hidden">The idea</span><textarea id="idea" class="story-input" rows="5" placeholder="Tap the mic and let them talk, or type it here.">${esc(d.text)}</textarea></label>
+        <label><span class="hidden">The idea</span><textarea id="idea" class="story-input" rows="5" placeholder="Tap the mic and say it, or type it here.">${esc(d.text)}</textarea></label>
       </div>
       ${r ? `
         <div class="section-head"><h2>Said back${d.kid ? ` to ${esc(d.kid)}` : ""}</h2></div>
@@ -935,7 +936,7 @@ async function screenTell() {
     }
     const ok = await confirmSheet({ title: "Start a new universe?", body: "The world, the cast and a quest that can run for many chapters get written from this idea. About a minute.", ok: "Start it" });
     if (!ok) return;
-    const out = await busy([{ label: "Building a new universe", run: () => story("create_universe", { idea: `${d.text}\n\nSummary: ${r.for_parent}`, main_kid: d.kid || undefined }) }],
+    const out = await busy([{ label: "Building a new universe", run: () => story("create_universe", { idea: `${d.text}\n\nSummary: ${r.for_parent}`, main_kid: (cache.family ?? []).some((m) => m.name === d.kid && m.role === "kid") ? d.kid : undefined }) }],
       { kid: d.kid, hint: "About a minute. You can set the phone down." });
     cache.universes = null;
     store.set("pendingIdea", { text: r.for_parent, kid: d.kid, universe_id: out.universe.id });

@@ -36,8 +36,8 @@ const path = (lit) => `<div class="ti-path">${["Told", "Written", "Checked", "Re
 const SLIDES = [
   {
     kick: "1 · Told",
-    title: "A kid tells the idea",
-    body: "Tap Tell, hand over the phone and let them talk. Story Universe says the idea back so they know it was heard.",
+    title: "Add a new story idea",
+    body: "Tap Tell and say it or type it. Anyone in the family can add one. Story Universe says the idea back so you know it was heard right.",
     art: `<div class="ti-art ti-tell">
       <div class="ti-mic">${MIC}<span class="ti-ring"></span><span class="ti-ring r2"></span></div>
       <div class="ti-bubble"><span>A goose</span> <span>with a very</span> <span>long scarf…</span></div>
@@ -119,7 +119,6 @@ export function showTutorial({ force = false } = {}) {
       const skip = root.querySelector("[data-skip]");
       if (last) skip.hidden = true; else skip.onclick = done;
       root.querySelector("#tiSkip")?.addEventListener("change", (e) => prefsSet(e.target.checked));
-      root.querySelector("[data-next]").focus({ preventScroll: true });
     };
     const go = (d) => { i = Math.max(0, Math.min(SLIDES.length - 1, i + d)); draw(); };
     const done = () => {
