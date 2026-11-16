@@ -1,0 +1,5 @@
+-- Passcode-aware test helpers (applied Nov 16, 2026 via Supabase MCP).
+-- Usage: select dev.call_story('{"action":"family"}'::jsonb, '<passcode>');
+-- The passcode is passed per call and never stored. Function bodies are the same as
+-- dev.call_story(jsonb) / dev.call_produce(jsonb) plus an x-family-passcode header.
+-- (Full definitions live in the database; see pg_get_functiondef.)
