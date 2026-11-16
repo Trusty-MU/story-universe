@@ -493,7 +493,6 @@ async function screenUniverse(id) {
       <span class="pc" style="width:220px;height:220px;right:-70px;top:-70px;background:${solid};opacity:.25"></span>
       <span class="pc" style="width:110px;height:110px;right:-36px;bottom:-56px;background:${solid};opacity:.4"></span>
       ${u.cover_url ? `<img class="inset" src="${esc(u.cover_url)}" alt="">` : ""}
-      ${backBtn("#/library").replace('class="icon-btn"', 'class="icon-btn" style="background:var(--paper)"')}
       <div class="kick" style="margin-top:6px;color:var(--bark)">Universe</div>
       <h1>${esc(u.title)}</h1>
       ${castLine ? `<div class="cast">${esc(castLine)}</div>` : ""}
@@ -606,7 +605,7 @@ async function screenStudio(id) {
   const next = (sortedChapters(u).at(-1)?.number ?? 0) + 1;
 
   view.innerHTML = `
-    <div class="topbar">${backBtn(`#/u/${id}`)}<div class="kick">${esc(u.title)}</div></div>
+    <div class="topbar"><div class="kick">${esc(u.title)}</div></div>
     <div class="title-block"><h1>Chapter ${next}</h1><p class="soft" style="margin:0">Tell the writer what this one needs.</p></div>
     <h2 style="margin-top:8px">Who is it for?</h2>
     <div class="chips" id="kids"></div>
@@ -721,7 +720,7 @@ async function screenChapter(id) {
 
   const endLines = script.slice(-3);
   view.innerHTML = `
-    <div class="topbar">${backBtn(`#/u/${u.id}`)}<div class="kick">${esc(u.title)} · Chapter ${ch.number}</div></div>
+    <div class="topbar"><div class="kick">${esc(u.title)} · Chapter ${ch.number}</div></div>
     <div class="title-block"><h1 style="font-size:34px">${esc(ch.title ?? "Untitled")}</h1>
       <div class="chips">${main ? `<span class="badge">For ${esc(main)}</span>` : ""}${ch.brief?.bedtime ? `<span class="badge">Bedtime</span>` : ""}<span class="badge">About ${minutes} min</span></div></div>
     ${pathHtml(st, true)}
