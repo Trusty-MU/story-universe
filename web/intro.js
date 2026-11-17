@@ -43,8 +43,8 @@ const SLIDES = [
   {
     night: true,
     kick: "Why Campfire",
-    title: "People have always gathered round a fire",
-    body: "For as long as there have been stories, people have pulled up close to a fire to be together and share them. Campfire brings that circle to bedtime, even on nights someone is far from home.",
+    title: "People have always gathered round the fire to share stories and songs",
+    body: "It's where families pull up close and feel together. Campfire brings that circle to bedtime, even on nights someone is far from home.",
     art: `<div class="ti-art ti-camp">
       <span class="ti-star" style="left:12%;top:10%;--d:0s"></span><span class="ti-star" style="left:30%;top:2%;--d:.8s"></span>
       <span class="ti-star" style="left:70%;top:6%;--d:1.4s"></span><span class="ti-star" style="left:88%;top:22%;--d:.4s"></span>
