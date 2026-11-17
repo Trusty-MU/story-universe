@@ -35,6 +35,7 @@ const ICON = {
   bang: `<svg viewBox="0 0 24 24" fill="none" stroke="#4a3323" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 6v7M12 17.5v.5"/></svg>`,
   speak: `<svg width="20" height="20" viewBox="0 0 24 24" ${P} aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9zM16 9a4 4 0 0 1 0 6"/></svg>`,
   flame: `<svg width="84" height="112" viewBox="0 0 96 128" aria-hidden="true"><path d="M48 4C62 30 88 46 88 82a40 40 0 0 1-80 0C8 62 18 50 28 42c0 16 8 26 18 26C46 42 34 26 48 4z" fill="#f0632b"/><path d="M50 52c8 14 20 22 20 40a22 22 0 0 1-44 0c0-10 6-16 12-20 0 8 4 12 10 12 0-14-6-20 2-32z" fill="#ffb703"/></svg>`,
+  note: `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 17.5A2.5 2.5 0 1 1 7 15V5l11-2v11.5A2.5 2.5 0 1 1 16 12V6.3L9 7.6z"/></svg>`,
   idea: `<svg width="26" height="26" viewBox="0 0 24 24" ${P} aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>`,
 };
 
@@ -105,15 +106,42 @@ function stageOf(ch, review) {
   return { done, cur, warn, next };
 }
 
-function pathHtml(st, big = false) {
-  const names = ["Told", "Written", "Checked", "Recorded"];
-  return `<div class="path ${big ? "big" : ""}" role="img" aria-label="Story path: ${names.map((n, i) => `${n} ${st.done[i] ? "done" : i === st.cur ? "next" : "not yet"}`).join(", ")}">${names.map((n, i) => {
-    const cls = st.done[i] ? "done" : i === st.cur ? (st.warn && i === 2 ? "cur warn" : "cur") : "";
+function pathHtml(st, big = false, names = ["Told", "Written", "Checked", "Recorded"]) {
+  const checkedAt = names.indexOf("Checked");
+  return `<div class="path ${big ? "big" : ""}" role="img" aria-label="Path: ${names.map((n, i) => `${n} ${st.done[i] ? "done" : i === st.cur ? "next" : "not yet"}`).join(", ")}">${names.map((n, i) => {
+    const cls = st.done[i] ? "done" : i === st.cur ? (st.warn && i === checkedAt ? "cur warn" : "cur") : "";
     const inner = big && st.done[i] ? ICON.check.replace("<svg", '<svg width="16" height="16"') : big && cls.includes("warn") ? ICON.bang.replace("<svg", '<svg width="18" height="18"') : "";
-    const bar = i < 3 ? `<span class="bar ${st.done[i + 1] ? "done" : ""}"></span>` : "";
+    const bar = i < names.length - 1 ? `<span class="bar ${st.done[i + 1] ? "done" : ""}"></span>` : "";
     return `<div class="stop ${cls}"><span class="d">${inner}</span>${n}</div>${bar}`;
   }).join("")}</div>`;
 }
+
+// Songs walk a shorter path: Written, Checked, Recorded.
+const SONG_PATH = ["Written", "Checked", "Recorded"];
+const MOOD_LABEL = { lullaby: "Lullaby", singalong: "Sing-along", adventure: "Adventure" };
+const fmtLen = (sec) => (sec ? fmtTime(sec) : "");
+function songStage(sg) {
+  const s = sg.status;
+  const checked = s === "approved" || s === "produced" || (s === "draft" && sg.review?.verdict === "pass");
+  const recorded = s === "produced";
+  let next;
+  if (recorded) next = { label: "Play", tone: "pine" };
+  else if (s === "approved") next = { label: "Next: record", tone: "flame" };
+  else if (s === "needs_fix") next = { label: "Needs a fix", tone: "flame" };
+  else if (s === "blocked") next = { label: "Needs a rewrite", tone: "ember" };
+  else if (checked) next = { label: "Next: approve", tone: "flame" };
+  else next = { label: "Next: check", tone: "flame" };
+  const done = [true, checked, recorded];
+  return { done, cur: done.indexOf(false), warn: s === "needs_fix" || s === "blocked", next };
+}
+const songRow = (sg, withBook = false) => {
+  const st = songStage(sg);
+  const meta = [MOOD_LABEL[sg.brief?.mood] ?? "Song", fmtLen(sg.duration_seconds ?? sg.target_seconds), withBook ? sg.book_title : ""].filter(Boolean).join(" · ");
+  return `<a class="card tap" href="${sg.status === "produced" ? `#/play/song/${sg.id}` : `#/s/${sg.id}`}" style="display:flex;gap:14px;align-items:center;padding:12px 14px">
+    <span class="mic" style="width:46px;height:46px;flex:none;${sg.status === "produced" ? "" : "background:var(--paper-2);color:var(--bark)"}" aria-hidden="true">${sg.status === "produced" ? ICON.play.replace("<svg", '<svg width="20" height="20"') : ICON.note}</span>
+    <span class="grow"><span style="display:block;font-weight:700">${esc(sg.title)}</span><span class="soft small" style="display:block">${esc(meta)}</span></span>
+    ${sg.status === "produced" ? "" : `<span class="badge ${st.next.tone}">${esc(st.next.label)}</span>`}</a>`;
+};
 
 // ---------- API ----------
 
@@ -147,8 +175,9 @@ const story = (action, params) => call("story", action, params);
 const produce = (action, params) => call("produce", action, params);
 const familyApi = (action, params) => call("family", action, params);
 const libraryApi = (action, params) => call("library", action, params);
+const songsApi = (action, params) => call("songs", action, params);
 
-const cache = { universes: null, family: null, voices: null, covers: null };
+const cache = { universes: null, family: null, voices: null, covers: null, songs: null };
 async function getFamily(fresh = false) {
   if (fresh || !cache.family) cache.family = await familyApi("list");
   return cache.family;
@@ -416,6 +445,8 @@ async function screenTonight() {
             <span style="display:block;font:600 20px/1.15 var(--display);margin-top:8px">Chapter ${upNext.c.number}. ${esc(upNext.c.title)}</span>
             <span class="soft small" style="display:block">${esc(upNext.u.title)}</span></span>
           <span class="mic" style="width:52px;height:52px" aria-hidden="true">${ICON.play.replace("<svg", '<svg width="22" height="22"')}</span></a>` : ""}
+      ${(cache.songs ?? []).some((x) => x.status === "produced") ? `<div class="section-head"><h2>Sing first</h2><a class="link" href="#/library" id="allSongs">All songs</a></div>
+        <div class="chips">${cache.songs.filter((x) => x.status === "produced").slice(0, 4).map((x) => `<a class="chip tap" href="#/play/song/${x.id}" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none">${ICON.note.replace('width="22" height="22"', 'width="18" height="18"')}${esc(x.title)}</a>`).join("")}</div>` : ""}
       ${waiting.length ? `<div class="section-head"><h2>Needs a grown-up</h2></div><div class="list">${waiting.slice(0, 4).map(({ u, c }) => {
         const st = listStage(c);
         return `<a class="card tap" href="#/c/${c.id}"><div class="chrow"><span class="grow"><span class="t">Chapter ${c.number}. ${esc(c.title ?? "Untitled")}</span>
@@ -428,7 +459,9 @@ async function screenTonight() {
       <p style="margin-top:36px;display:flex;gap:24px;flex-wrap:wrap"><button class="link" id="howTo">How it works</button><button class="link" id="lockNow">Lock the app</button></p>`;
     $("#lockNow").onclick = () => { store.del("passcode"); route(); };
     $("#howTo").onclick = () => showTutorial({ force: true });
+    $("#allSongs")?.addEventListener("click", () => store.set("libTab", "songs"));
   };
+  songsApi("list").then((l) => { cache.songs = l; if (!location.hash.replace(/^#\/?/, "") && cache.universes) draw(cache.universes, cache.family); }).catch(() => {});
   if (cache.universes) draw(cache.universes, cache.family);
   try {
     const [u, f] = await Promise.all([getUniverses(true), getFamily()]);
@@ -451,8 +484,11 @@ async function screenLibrary() {
       <div class="title-block"><div class="kick">Library</div><h1>Our stories</h1></div>
       <div class="seg" id="libseg" style="margin-bottom:20px">
         <button data-t="universes" aria-pressed="${tab === "universes"}">Books</button>
-        <button data-t="episodes" aria-pressed="${tab === "episodes"}">Episodes</button></div>
-      ${tab === "universes" ? `<div class="shelf">
+        <button data-t="episodes" aria-pressed="${tab === "episodes"}">Episodes</button>
+        <button data-t="songs" aria-pressed="${tab === "songs"}">Songs</button></div>
+      ${tab === "songs" ? (songs === null ? `<p class="soft">Loading songs…</p>` : songs.length ? `<div class="list">${[...songs].sort((a, b) => (b.status === "produced") - (a.status === "produced")).map((sg) => songRow(sg, true)).join("")}</div>`
+        : `<div class="card"><p style="margin:0">No songs yet.</p><p class="soft small" style="margin:6px 0 0">Open a book and tap Write a theme song.</p></div>`)
+      : tab === "universes" ? `<div class="shelf">
           ${universes.map((u, i) => `<a class="book tap" href="#/u/${u.id}">${coverTile(u, i)}
             <span style="font:600 17px/1.15 var(--display)">${esc(u.title)}</span>
             <span class="bs">${(u.chapters ?? []).length} chapter${(u.chapters ?? []).length === 1 ? "" : "s"}</span></a>`).join("")}
@@ -466,6 +502,8 @@ async function screenLibrary() {
         : `<div class="card"><p style="margin:0">No episodes yet.</p><p class="soft small" style="margin:6px 0 0">When a chapter is checked and recorded, it shows up here.</p></div>`}`;
     $$("#libseg [data-t]").forEach((b) => (b.onclick = () => { store.set("libTab", b.dataset.t); draw(universes); }));
   };
+  let songs = cache.songs ?? null;
+  songsApi("list").then((list) => { songs = cache.songs = list; if (cache.universes && store.get("libTab") === "songs") draw(cache.universes); }).catch(() => { songs = []; });
   if (cache.universes) draw(cache.universes);
   try { draw(await getUniverses(true)); }
   catch (e) { if (!cache.universes) handleLoadError(e, screenLibrary); else toast(e.message, true); }
@@ -518,8 +556,13 @@ async function screenUniverse(id) {
             <span class="badge ${st.next.tone}">${esc(st.next.label)}</span></div>${pathHtml(st)}</a>`;
       }).join("")}
       <div class="card dashed"><span style="font-weight:700">${nextNumber}. Not told yet</span>
-        <span class="soft small" style="display:block;margin-top:2px">${quest?.next?.[0] ? `Next on the quest: ${esc(quest.next[0])}` : "Whatever happens next is up to the kids."}</span></div>
+        <span class="soft small" style="display:block;margin-top:2px">${quest?.next?.[0] ? `Next on the quest: ${esc(quest.next[0])}` : "Whatever happens next is up to you."}</span></div>
     </div>
+    <div class="section-head" id="songs"><h2>Songs</h2></div>
+    <div class="list" id="songList"><p class="soft small" style="margin:0">Loading songs…</p></div>
+    <a class="feature tap" href="#/u/${id}/song" style="background:var(--flame-tint);margin-top:12px">
+      <span class="ico" style="background:var(--flame);color:var(--bark)">${ICON.note}</span>
+      <span class="grow"><span class="t">Write a theme song</span><span class="s">Short, singable, about this book. Checked before it's recorded.</span></span>${ICON.chev}</a>
     <div class="section-head" id="voices"><h2>Who reads it</h2><button class="link" id="changeVoices">Change</button></div>
     <div class="card" id="cast"></div>
     <div class="section-head"><h2>Cover</h2></div>
@@ -542,6 +585,11 @@ async function screenUniverse(id) {
     <div class="danger-zone"><button class="link" id="delBook">Delete this book</button></div>`;
 
   setDock(`${backBtn("#/library")}<a class="btn" href="#/u/${id}/write">What happens next?</a>`);
+  songsApi("list", { universe_id: id }).then((list) => {
+    const el = $("#songList");
+    if (!el) return;
+    el.innerHTML = list.length ? list.map((sg) => songRow(sg)).join("") : `<p class="soft small" style="margin:0">No songs yet.</p>`;
+  }).catch(() => { const el = $("#songList"); if (el) el.innerHTML = `<p class="soft small" style="margin:0">Songs couldn't load.</p>`; });
 
   const voiceName = (vid) => cache.voices?.find((v) => v.id === vid)?.name;
   const drawCast = () => {
@@ -870,6 +918,178 @@ async function screenChapter(id) {
   }
 }
 
+// ---------- Songs (a theme song for a book: Written, Checked, Recorded) ----------
+
+async function screenSongStudio(id) {
+  setTab("library");
+  loading();
+  let u, fam;
+  try { [u, fam] = await Promise.all([getUniverse(id), getFamily()]); }
+  catch (e) { return handleLoadError(e, () => screenSongStudio(id)); }
+  const kids = kidsOldestFirst(fam);
+  const brief = { mood: isBedtimeHour() ? "lullaby" : "singalong", length: "medium", for_kid: "" };
+  const seg = (key, opts) => `<div class="seg" data-seg="${key}">${opts.map(([v, l]) => `<button data-v="${v}" aria-pressed="${brief[key] === v}">${l}</button>`).join("")}</div>`;
+  view.innerHTML = `
+    <div class="title-block"><div class="kick">${esc(u.title)}</div><h1>A theme song</h1>
+      <p class="soft" style="margin:0">Written from the story memory and the characters, then checked before anything is recorded.</p></div>
+    <div class="section-head"><h2>What kind of song?</h2></div>
+    ${seg("mood", [["lullaby", "Lullaby"], ["singalong", "Sing-along"], ["adventure", "Adventure"]])}
+    <div class="section-head"><h2>How long?</h2></div>
+    ${seg("length", [["short", "1:30"], ["medium", "2:00"], ["long", "2:30"]])}
+    <p class="soft small" style="margin:8px 0 0">The length is set exactly, so it won't run long.</p>
+    ${kids.length ? `<div class="section-head"><h2>Who sings along most?</h2></div>
+      <div class="chips" id="kids">${kids.map((k) => `<button class="chip" data-kid="${esc(k.name)}" aria-pressed="false">${esc(k.name)}</button>`).join("")}</div>
+      <p class="soft small" style="margin:8px 0 0">Optional. The words are pitched for their age.</p>` : ""}
+    <div class="section-head"><h2>Anything to include?</h2></div>
+    <textarea id="notes" rows="3" placeholder="Optional: a line to repeat, a lesson, a favorite character"></textarea>`;
+  $$("[data-seg]").forEach((g) => $$("button", g).forEach((b) => (b.onclick = () => {
+    brief[g.dataset.seg] = b.dataset.v;
+    $$("button", g).forEach((x) => x.setAttribute("aria-pressed", x === b));
+  })));
+  $$("#kids [data-kid]").forEach((b) => (b.onclick = () => {
+    brief.for_kid = brief.for_kid === b.dataset.kid ? "" : b.dataset.kid;
+    $$("#kids [data-kid]").forEach((x) => x.setAttribute("aria-pressed", x.dataset.kid === brief.for_kid));
+  }));
+  setDock(`${backBtn(`#/u/${id}#songs`)}<button class="btn" id="go">Write the song</button>`);
+  $("#go").onclick = () => attempt(async () => {
+    let songId = null;
+    try {
+      await busy([
+        { label: "Writing the song", run: async () => { const r = await songsApi("write", { universe_id: id, brief: { ...brief, for_kid: brief.for_kid || undefined, notes: $("#notes").value.trim() || undefined } }); songId = r.id; return r; } },
+        { label: "Grown-up check", run: () => songsApi("review", { song_id: songId }) },
+      ], { title: "Writing the song", kicker: u.title, kid: brief.for_kid || undefined, hint: "Usually under a minute." });
+    } finally {
+      if (songId) location.hash = `#/s/${songId}`;
+    }
+  });
+}
+
+async function screenSong(id) {
+  setTab("library");
+  loading();
+  let sg;
+  try { sg = await songsApi("get", { song_id: id }); }
+  catch (e) { return handleLoadError(e, () => screenSong(id)); }
+  const r = sg.review;
+  const st = songStage(sg);
+  const status = sg.status;
+  const secs = sg.duration_seconds ?? sg.target_seconds ?? 120;
+  const credits = Math.round((secs / 60) * 900);
+  const back = backBtn(`#/u/${sg.universe_id}#songs`);
+  const suno = `${(sg.style?.positive ?? []).join(", ")}. Clean children's song, no explicit content.`;
+
+  const checkCard = () => {
+    if (!r) return "";
+    const sc = r.scores ?? {};
+    const checks = [
+      ["Kind and gentle", (sc.calm_and_kind ?? 0) >= 4],
+      [`Right for ${sg.brief?.for_kid ? esc(sg.brief.for_kid) : "the kids"}`, (sc.age_fit ?? 0) >= 4],
+      ["Fits our family's values", (sc.values_fit ?? 0) >= 4],
+      ["Easy to sing along", (sc.singable ?? 0) >= 4],
+    ];
+    const tone = r.verdict === "pass" ? "tint-pine" : r.verdict === "fix" ? "tint-flame" : "tint-ember";
+    const head = r.verdict === "pass" ? "Ready to sing" : r.verdict === "fix" ? "The check found something to fix" : "This one can't be approved";
+    return `<div class="card ${tone} stack"><h3>${head}</h3>
+      ${checks.map(([t, ok]) => `<div class="chk"><span class="m ${ok ? "" : "warn"}">${ok ? ICON.check : ICON.bang}</span>${t}</div>`).join("")}
+      ${(r.reasons ?? []).map((x) => `<div class="note"><span class="badge ${x.severity === "high" ? "ember" : x.severity === "medium" ? "flame" : ""}" style="background:var(--white)">${x.severity === "low" ? "Small" : x.severity === "medium" ? "Medium" : "Big"}</span><span>${esc(x.issue)}</span></div>`).join("")}
+      ${r.fix_instructions ? `<p class="small" style="margin:0"><b>Suggested fix:</b> ${esc(r.fix_instructions)}</p>` : ""}</div>`;
+  };
+
+  view.innerHTML = `
+    <div class="title-block"><div class="kick">${esc(sg.book_title ?? "")} · Theme song</div><h1>${esc(sg.title)}</h1>
+      <div class="chips" style="margin-top:4px"><span class="badge">${esc(MOOD_LABEL[sg.brief?.mood] ?? "Song")}</span><span class="badge">${fmtLen(secs)}</span>${sg.brief?.for_kid ? `<span class="badge">For ${esc(sg.brief.for_kid)}</span>` : ""}${sg.source === "suno" && status === "produced" ? `<span class="badge">From Suno</span>` : ""}</div></div>
+    ${pathHtml(st, true, SONG_PATH)}
+    <div class="stack" style="margin-top:18px">
+      ${checkCard()}
+      ${status === "approved" ? `<div class="card stack"><h3>Record it</h3>
+        <p class="soft small" style="margin:0">About ${fmtLen(secs)} of music. Uses roughly ${credits.toLocaleString()} of this month's 90,000 voice and music credits. Takes about a minute.</p></div>
+        <div class="card stack"><h3>Prefer Suno?</h3>
+        <p class="soft small" style="margin:0">Copy the lyrics and style into Suno, make the song there, then add the MP3 here.</p>
+        <div class="row" style="gap:10px;flex-wrap:wrap"><button class="btn quiet small" id="copySuno">Copy for Suno</button>
+          <label class="btn quiet small" style="cursor:pointer">Add the Suno MP3<input type="file" id="sunoFile" accept="audio/*" hidden></label></div></div>` : ""}
+      <div class="card stack"><div class="kick">The words</div>
+        ${(sg.sections ?? []).map((x) => `<div><div class="who" style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--bark-soft)">${esc(x.name)} · ${x.seconds}s</div>
+          ${x.lines.length ? x.lines.map((l) => `<p class="story" style="margin:2px 0">${esc(l)}</p>`).join("") : `<p class="soft small" style="margin:2px 0">Music only</p>`}</div>`).join("")}</div>
+      <div class="danger-zone"><button class="link" id="delSong">Delete this song</button></div>
+    </div>`;
+
+  $("#delSong").onclick = () => attempt(async () => {
+    const ok = await confirmSheet({ title: `Delete ${sg.title}?`, body: "The words and any recording will be deleted. It can't be undone.", ok: "Delete the song", cancel: "Keep it", danger: true });
+    if (!ok) return;
+    if (now.chapter?.id === `song:${id}`) { audio.pause(); audio.removeAttribute("src"); now.chapter = null; now.universe = null; }
+    await busy([{ label: "Deleting the song", run: () => songsApi("delete", { song_id: id }) }], { hint: "A few seconds." });
+    location.hash = `#/u/${sg.universe_id}#songs`;
+    toast(`${sg.title} was deleted`);
+  });
+  $("#copySuno")?.addEventListener("click", async () => {
+    const text = `TITLE\n${sg.title}\n\nSTYLE\n${suno}\n\nLYRICS\n${sg.lyrics_text ?? ""}`;
+    try { await navigator.clipboard.writeText(text); toast("Copied. Paste it into Suno."); }
+    catch { toast("Couldn't copy on this phone. Long-press the words to copy them.", true); }
+  });
+  $("#sunoFile")?.addEventListener("change", (e) => attempt(async () => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 25 * 1024 * 1024) return toast("That file is over 25 MB", true);
+    const seconds = await new Promise((res) => { const a = new Audio(); a.preload = "metadata"; a.onloadedmetadata = () => res(a.duration); a.onerror = () => res(null); a.src = URL.createObjectURL(file); });
+    await busy([{ label: "Adding the Suno song", run: async () => {
+      const up = await songsApi("upload_url", { song_id: id });
+      const res = await fetch(up.upload_url, { method: "PUT", headers: { "Content-Type": file.type || "audio/mpeg", "x-upsert": "true" }, body: file });
+      if (!res.ok) throw new Error(`Upload failed (${res.status})`);
+      return songsApi("attach_upload", { song_id: id, seconds: seconds && isFinite(seconds) ? seconds : undefined });
+    } }], { hint: "Depends on your connection." });
+    location.hash = `#/play/song/${id}`;
+  }));
+
+  const checkStep = { label: "Grown-up check", run: () => songsApi("review", { song_id: id }) };
+  const revise = (needNotes) => attempt(async () => {
+    const feedback = await notesSheet({
+      title: needNotes ? "Ask for a change" : "Fix it",
+      intro: needNotes ? null : "The check's suggested fix is included. Add anything else you want changed.",
+      ok: "Rewrite and check again", required: needNotes && !r?.fix_instructions,
+    });
+    if (feedback === null) return;
+    if (!feedback && !r?.fix_instructions) return toast("Add a note about what should change", true);
+    await busy([{ label: "Rewriting the song", run: () => songsApi("revise", { song_id: id, feedback: feedback || undefined }) }, checkStep],
+      { title: "Rewriting the song", kicker: sg.book_title, kid: sg.brief?.for_kid });
+    screenSong(id);
+  });
+  const approve = (override) => attempt(async () => {
+    if (override) {
+      const ok = await confirmSheet({ title: "Keep it anyway?", body: "The check asked for a fix. As the parent you can approve it as it is. This is noted.", ok: "Keep it anyway", cancel: "Go back" });
+      if (!ok) return;
+    }
+    await busy([{ label: "Approving the song", run: () => songsApi("approve", { song_id: id, override: override || undefined }) }], { hint: "A second." });
+    screenSong(id);
+  });
+  const record = () => attempt(async () => {
+    const ok = await confirmSheet({ title: "Record the song?", body: `About ${fmtLen(secs)} of music, roughly ${credits.toLocaleString()} credits. Takes about a minute.`, ok: "Record it" });
+    if (!ok) return;
+    await busy([{ label: "Recording the song", run: () => songsApi("record", { song_id: id }) }], { kicker: sg.book_title, hint: "About a minute. You can set the phone down." });
+    location.hash = `#/play/song/${id}`;
+  });
+
+  if (!r && status === "draft") {
+    setDock(`${back}<button class="btn" id="a">Run the grown-up check</button>`);
+    $("#a").onclick = () => attempt(async () => { await busy([checkStep], { hint: "Usually under a minute." }); screenSong(id); });
+  } else if (status === "draft" && r?.verdict === "pass") {
+    setDock(`${back}<div class="col"><button class="link" id="b">Ask for a change</button><button class="btn" id="a">Approve song</button></div>`);
+    $("#a").onclick = () => approve(false);
+    $("#b").onclick = () => revise(true);
+  } else if (status === "needs_fix") {
+    setDock(`${back}<div class="col"><button class="link" id="b">Keep it anyway</button><button class="btn" id="a">Fix it</button></div>`);
+    $("#a").onclick = () => revise(false);
+    $("#b").onclick = () => approve(true);
+  } else if (status === "blocked") {
+    setDock(`${back}<button class="btn" id="a">Rewrite it</button>`);
+    $("#a").onclick = () => revise(true);
+  } else if (status === "approved") {
+    setDock(`${back}<button class="btn" id="a">Record the song</button>`);
+    $("#a").onclick = record;
+  } else if (status === "produced") {
+    setDock(`${back}<a class="btn" href="#/play/song/${id}">${ICON.play.replace("<svg", '<svg width="20" height="20"')}Play</a>`);
+  } else setDock(back);
+}
+
 // ---------- Tell ----------
 
 const tellDraft = () => store.get("capture", { kid: "", text: "", restated: null, target: null });
@@ -1061,13 +1281,11 @@ function fadeOutAndPause() {
     if (v <= 0) { clearInterval(t); audio.pause(); audio.volume = start; } else audio.volume = v;
   }, 150);
 }
-function setMediaSession(ch) {
+function setMediaSession({ title, artist, cover }) {
   if (!("mediaSession" in navigator)) return;
   navigator.mediaSession.metadata = new MediaMetadata({
-    title: `Chapter ${ch.number}. ${ch.title ?? ""}`,
-    artist: ch.universe_title ?? "Campfire",
-    album: "Campfire",
-    artwork: ch.cover_url ? [{ src: ch.cover_url, sizes: "1024x1536", type: "image/png" }] : [],
+    title, artist: artist ?? "Campfire", album: "Campfire",
+    artwork: cover ? [{ src: cover, sizes: "1024x1536", type: "image/png" }] : [],
   });
   navigator.mediaSession.setActionHandler("play", () => audio.play());
   navigator.mediaSession.setActionHandler("pause", () => audio.pause());
@@ -1095,26 +1313,51 @@ async function screenPlayer(id) {
     setDock(`${backBtn(`#/c/${id}`)}<a class="btn" href="#/c/${id}">Open the chapter</a>`);
     return;
   }
-  if (now.chapter?.id !== id) {
-    now.chapter = ch;
-    now.universe = u;
-    audio.src = src;
-    const resume = store.get("resume");
-    if (resume?.id === id && resume.t > 5) audio.addEventListener("loadedmetadata", () => (audio.currentTime = resume.t), { once: true });
-    setMediaSession(ch);
-  }
   const nextCh = sortedChapters(u).find((c) => c.number > ch.number && c.status === "produced");
+  renderPlayer({
+    key: id, item: ch, universe: u, src,
+    title: u.title, line: `Chapter ${ch.number}. ${esc(ch.title)}`, cover: ch.cover_url, closeHref: `#/u/${u.id}`,
+    sample: !ch.audio_url, upnext: nextCh ? `<a class="upnext" href="#/play/${nextCh.id}">Up next: Chapter ${nextCh.number}</a>` : "",
+    media: { title: `Chapter ${ch.number}. ${ch.title ?? ""}`, artist: u.title, cover: ch.cover_url },
+  });
+}
+
+async function screenSongPlayer(id) {
+  setTab("library");
+  loading();
+  let sg, covers;
+  try { [sg, covers] = await Promise.all([songsApi("get", { song_id: id }), getCovers()]); }
+  catch (e) { return handleLoadError(e, () => screenSongPlayer(id)); }
+  if (!sg.audio_url) { location.hash = `#/s/${id}`; return; }
+  const cover = covers?.[sg.universe_id] ?? null;
+  renderPlayer({
+    key: `song:${id}`, item: { id: `song:${id}`, universe_id: sg.universe_id }, universe: null, src: sg.audio_url,
+    title: sg.title, line: `Theme song · ${esc(sg.book_title ?? "")}`, cover, closeHref: `#/s/${id}`, sample: false, upnext: "",
+    media: { title: sg.title, artist: sg.book_title, cover },
+  });
+}
+
+// The night player for any track (a chapter or a song).
+function renderPlayer(t) {
+  if (now.chapter?.id !== t.key) {
+    now.chapter = t.item;
+    now.universe = t.universe;
+    audio.src = t.src;
+    const resume = store.get("resume");
+    if (resume?.id === t.key && resume.t > 5) audio.addEventListener("loadedmetadata", () => (audio.currentTime = resume.t), { once: true });
+    setMediaSession(t.media);
+  }
   document.body.classList.add("night");
   setDock("");
   view.innerHTML = `
     <div class="glow" aria-hidden="true"></div>
     <div class="player">
-      <div class="top"><a class="icon-btn" href="#/u/${u.id}" aria-label="Close player">${ICON.close}</a>
-        <div class="kick">${esc(dayKicker())}${!ch.audio_url ? " · sample" : ""}</div><span style="width:48px"></span></div>
+      <div class="top"><a class="icon-btn" href="${t.closeHref}" aria-label="Close player">${ICON.close}</a>
+        <div class="kick">${esc(dayKicker())}${t.sample ? " · sample" : ""}</div><span style="width:48px"></span></div>
       <div class="mid">
-        ${ch.cover_url ? `<img class="art" src="${esc(ch.cover_url)}" alt="">` : ""}
-        <h1>${esc(u.title)}</h1>
-        <div style="font-size:17px;color:rgba(251,243,228,.9)">Chapter ${ch.number}. ${esc(ch.title)}</div>
+        ${t.cover ? `<img class="art" src="${esc(t.cover)}" alt="">` : ""}
+        <h1>${esc(t.title)}</h1>
+        <div style="font-size:17px;color:rgba(251,243,228,.9)">${t.line}</div>
         <button class="big-play" id="pp" aria-label="Play">${ICON.play}</button>
         <div class="prog"><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Position">
           <div class="times"><span id="cur">0:00</span><span id="dur">0:00</span></div></div>
@@ -1124,7 +1367,7 @@ async function screenPlayer(id) {
         <button class="pill" id="sleep">Sleep timer off</button>
         <button class="pill" id="fwd" aria-label="Ahead 15 seconds">Ahead 15</button>
       </div>
-      ${nextCh ? `<a class="upnext" href="#/play/${nextCh.id}">Up next: Chapter ${nextCh.number}</a>` : ""}
+      ${t.upnext}
     </div>`;
 
   const pp = $("#pp"), seek = $("#seek"), cur = $("#cur"), dur = $("#dur"), sleepBtn = $("#sleep");
@@ -1172,9 +1415,12 @@ async function route() {
   if (parts[0] === "capture") { location.replace("#/tell"); return; }
   if (parts[0] === "crew") return screenCrew();
   if (parts[0] === "u" && parts[2] === "write") return screenStudio(parts[1]);
+  if (parts[0] === "u" && parts[2] === "song") return screenSongStudio(parts[1]);
   if (parts[0] === "u") return screenUniverse(parts[1]);
   if (parts[0] === "c") return screenChapter(parts[1]);
+  if (parts[0] === "play" && parts[1] === "song") return screenSongPlayer(parts[2]);
   if (parts[0] === "play") return screenPlayer(parts[1]);
+  if (parts[0] === "s") return screenSong(parts[1]);
   location.hash = "#/";
 }
 
