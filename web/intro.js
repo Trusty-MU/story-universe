@@ -75,8 +75,8 @@ const SLIDES = [
   },
   {
     kick: "2 · Written",
-    title: "Every story becomes a universe",
-    body: "Characters, places and quests carry from one chapter to the next. Campfire remembers it all, so tonight picks up where last night left off.",
+    title: "Every idea becomes a book",
+    body: "A new idea starts a new book, or becomes the next chapter of one you already love. Characters, places and quests carry on, so tonight picks up where last night left off.",
     art: `<div class="ti-art ti-universe">
       <div class="ti-fan">
         <span class="ti-ch" style="--r:-13deg;--x:-46px;--d:.5s"></span><span class="ti-ch" style="--r:-5deg;--x:-20px;--d:.8s"></span><span class="ti-ch" style="--r:7deg;--x:30px;--d:1.1s"></span>
@@ -88,7 +88,7 @@ const SLIDES = [
   {
     kick: "Make it yours",
     title: "Lessons inside. Songs to sing along.",
-    body: "Tuck in what matters this week: kindness, courage, a school topic, where Dad is traveling. Each universe can have its own short theme song.",
+    body: "Tuck in what matters this week: kindness, courage, a school topic, where Dad is traveling. Each book can have its own short theme song.",
     art: `<div class="ti-art ti-extras">
       <div class="ti-lesson"><span class="ti-ic" style="background:#fff">${HEART}</span><span class="ti-kk">Lesson</span><b>Brave means asking for help</b></div>
       <div class="ti-song"><span class="ti-ic" style="background:#fff">${NOTE}</span><span class="ti-kk">Theme song</span><b>The Lamplighter Song</b>

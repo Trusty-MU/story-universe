@@ -423,7 +423,7 @@ async function screenTonight() {
       <a class="feature tap" href="#/tell" style="background:var(--flame-tint);margin-top:${waiting.length || upNext ? 24 : 0}px">
         <span class="ico" style="background:var(--flame);color:var(--bark)">${ICON.idea}</span>
         <span class="grow"><span class="t">Got a new idea?</span><span class="s">Say it or type it in Tell.</span></span>${ICON.chev}</a>
-      ${!universes.length ? `<p class="soft" style="margin-top:18px">No universes yet. The first idea starts one.</p>` : ""}
+      ${!universes.length ? `<p class="soft" style="margin-top:18px">No books yet. The first idea starts one.</p>` : ""}
       <p style="margin-top:36px;display:flex;gap:24px;flex-wrap:wrap"><button class="link" id="howTo">How it works</button><button class="link" id="lockNow">Lock the app</button></p>`;
     $("#lockNow").onclick = () => { store.del("passcode"); route(); };
     $("#howTo").onclick = () => showTutorial({ force: true });
@@ -449,13 +449,13 @@ async function screenLibrary() {
     view.innerHTML = `
       <div class="title-block"><div class="kick">Library</div><h1>Our stories</h1></div>
       <div class="seg" id="libseg" style="margin-bottom:20px">
-        <button data-t="universes" aria-pressed="${tab === "universes"}">Universes</button>
+        <button data-t="universes" aria-pressed="${tab === "universes"}">Books</button>
         <button data-t="episodes" aria-pressed="${tab === "episodes"}">Episodes</button></div>
       ${tab === "universes" ? `<div class="shelf">
           ${universes.map((u, i) => `<a class="book tap" href="#/u/${u.id}">${coverTile(u, i)}
             <span style="font:600 17px/1.15 var(--display)">${esc(u.title)}</span>
             <span class="bs">${(u.chapters ?? []).length} chapter${(u.chapters ?? []).length === 1 ? "" : "s"}</span></a>`).join("")}
-          <a class="book tap" href="#/tell"><span class="new"><span class="icon-btn" style="width:52px;height:52px">${ICON.plus}</span>Start a new universe</span>
+          <a class="book tap" href="#/tell"><span class="new"><span class="icon-btn" style="width:52px;height:52px">${ICON.plus}</span>Start a new book</span>
             <span class="bs">From a new idea</span></a></div>`
         : episodes.length ? `<div class="list">${episodes.map(({ u, c, ui }) => `
           <a class="card tap" href="#/play/${c.id}" style="display:flex;gap:14px;align-items:center;padding:12px 14px">${coverTile(u, ui, "small")}
@@ -496,7 +496,7 @@ async function screenUniverse(id) {
       <span class="pc" style="width:220px;height:220px;right:-70px;top:-70px;background:${solid};opacity:.25"></span>
       <span class="pc" style="width:110px;height:110px;right:-36px;bottom:-56px;background:${solid};opacity:.4"></span>
       ${u.cover_url ? `<img class="inset" src="${esc(u.cover_url)}" alt="">` : ""}
-      <div class="kick" style="margin-top:6px;color:var(--bark)">Universe</div>
+      <div class="kick" style="margin-top:6px;color:var(--bark)">Book</div>
       <h1>${esc(u.title)}</h1>
       ${castLine ? `<div class="cast">${esc(castLine)}</div>` : ""}
       ${qTotal ? `<div class="dots" title="${esc(quest.goal)}">${Array.from({ length: qTotal }, (_, i) => `<i class="${i < qDone ? "on" : ""}"></i>`).join("")}
@@ -504,7 +504,7 @@ async function screenUniverse(id) {
     </div>
     ${(u.pending_book_updates ?? []).map((p) => `
       <div class="card tint-flame stack" style="margin-top:18px">
-        <div class="kick" style="color:var(--bark)">Universe book update waiting</div>
+        <div class="kick" style="color:var(--bark)">Story memory update waiting</div>
         <ul style="margin:0;padding-left:20px">${(p.changes ?? []).map((c) => `<li>${esc(c)}</li>`).join("")}</ul>
         <button class="btn quiet small" data-accept="${p.id}">Accept the update</button></div>`).join("")}
     <div class="section-head"><h2>Chapters</h2></div>
@@ -527,7 +527,7 @@ async function screenUniverse(id) {
       <button class="btn quiet" id="newCover">${u.cover_url ? "Paint a new cover" : "Paint a cover"}</button>
       <p class="soft small" style="margin:0">One picture, about 30 to 60 seconds.</p>
     </div>
-    <div class="section-head"><h2>Universe book</h2></div>
+    <div class="section-head"><h2>Story memory</h2></div>
     <details class="card"><summary class="row" style="justify-content:space-between;min-height:32px"><b>Setting, rules and the story so far</b>${ICON.chev}</summary>
       <div class="stack small" style="margin-top:12px">
         ${b.premise ? `<p><b>Premise.</b> ${esc(b.premise)}</p>` : ""}
@@ -552,8 +552,8 @@ async function screenUniverse(id) {
   if (cache.voices) drawCast();
 
   $$("[data-accept]").forEach((btn) => (btn.onclick = () => attempt(async () => {
-    await busy([{ label: "Updating the universe book", run: () => story("accept_book_update", { book_version_id: btn.dataset.accept }) }], { hint: "A few seconds." });
-    toast("Universe book updated");
+    await busy([{ label: "Updating the story memory", run: () => story("accept_book_update", { book_version_id: btn.dataset.accept }) }], { hint: "A few seconds." });
+    toast("Story memory updated");
     screenUniverse(id);
   })));
 
@@ -731,7 +731,7 @@ async function screenChapter(id) {
       ${!r && status === "draft" ? `<div class="card tint-flame"><h3>Not checked yet</h3><p class="small" style="margin:6px 0 0">Every chapter gets a grown-up check for scariness, bedtime calm, age fit and family values before anyone hears it.</p></div>` : ""}
       ${status !== "approved" && status !== "produced" ? checkCard() : ""}
       ${status === "approved" && pending.length ? pending.map((p) => `<div class="card tint-flame stack">
-        <div class="kick" style="color:var(--bark)">Universe book update waiting</div>
+        <div class="kick" style="color:var(--bark)">Story memory update waiting</div>
         <ul style="margin:0;padding-left:20px" class="small">${(p.changes ?? []).map((c) => `<li>${esc(c)}</li>`).join("")}</ul>
         <button class="btn quiet small" data-accept="${p.id}">Accept the update</button></div>`).join("") : ""}
       ${status === "approved" ? `<div class="card" id="readers">
@@ -761,8 +761,8 @@ async function screenChapter(id) {
     el.scrollIntoView({ behavior: "smooth", block: "center" });
   }));
   $$("[data-accept]").forEach((btn) => (btn.onclick = () => attempt(async () => {
-    await busy([{ label: "Updating the universe book", run: () => story("accept_book_update", { book_version_id: btn.dataset.accept }) }], { hint: "A few seconds." });
-    toast("Universe book updated");
+    await busy([{ label: "Updating the story memory", run: () => story("accept_book_update", { book_version_id: btn.dataset.accept }) }], { hint: "A few seconds." });
+    toast("Story memory updated");
     screenChapter(id);
   })));
 
@@ -785,15 +785,15 @@ async function screenChapter(id) {
       const ok = await confirmSheet({ title: "Keep it anyway?", body: "The check asked for a fix. As the parent you can approve it as it is. This is noted.", ok: "Keep it anyway", cancel: "Go back" });
       if (!ok) return;
     }
-    const out = await busy([{ label: "Approving and updating the universe book", run: () => story("approve_chapter", { chapter_id: id, override: override || undefined }) }],
-      { kicker: `${u.title} · Chapter ${ch.number}`, hint: "The universe book remembers what happened, so later chapters stay consistent. About a minute." });
+    const out = await busy([{ label: "Approving and updating the story memory", run: () => story("approve_chapter", { chapter_id: id, override: override || undefined }) }],
+      { kicker: `${u.title} · Chapter ${ch.number}`, hint: "The story memory keeps track of what happened, so later chapters stay consistent. About a minute." });
     cache.universes = null;
     const accept = await confirmSheet({
-      title: "Update the universe book?",
+      title: "Update the story memory?",
       body: `<ul style="margin:0;padding-left:20px">${(out.changes ?? []).map((c) => `<li>${esc(c)}</li>`).join("")}</ul>`,
       ok: "Accept the update", cancel: "Later",
     });
-    if (accept && out.book_version_id) await busy([{ label: "Updating the universe book", run: () => story("accept_book_update", { book_version_id: out.book_version_id }) }], { hint: "A few seconds." });
+    if (accept && out.book_version_id) await busy([{ label: "Updating the story memory", run: () => story("accept_book_update", { book_version_id: out.book_version_id }) }], { hint: "A few seconds." });
     screenChapter(id);
   });
   const record = (sample) => attempt(async () => {
@@ -874,7 +874,7 @@ async function screenTell() {
         <div class="section-head"><h2>Where does it go?</h2></div>
         <div class="list" role="radiogroup" aria-label="Where does it go" style="gap:10px">
           ${sorted.map((u) => `<button class="radio" role="radio" data-target="${u.id}" aria-checked="${d.target === u.id}"><i></i>${esc(u.title)}, chapter ${(sortedChapters(u).at(-1)?.number ?? 0) + 1}${u.title === r.best_universe ? `<span class="fit">Best fit</span>` : ""}</button>`).join("")}
-          <button class="radio" role="radio" data-target="NEW" aria-checked="${d.target === "NEW"}"><i></i>A brand new universe${r.best_universe === "NEW" ? `<span class="fit">Best fit</span>` : ""}</button>
+          <button class="radio" role="radio" data-target="NEW" aria-checked="${d.target === "NEW"}"><i></i>A brand new book${r.best_universe === "NEW" ? `<span class="fit">Best fit</span>` : ""}</button>
         </div>
         <p style="margin-top:20px"><button class="link" id="clear">Clear and start over</button></p>` : ""}`;
 
@@ -910,7 +910,7 @@ async function screenTell() {
       $("#sayBack").onclick = sayBack;
     } else {
       const target = universes.find((u) => u.id === d.target);
-      const label = d.target === "NEW" || !target ? "Start this universe" : `Write chapter ${(sortedChapters(target).at(-1)?.number ?? 0) + 1}`;
+      const label = d.target === "NEW" || !target ? "Start this book" : `Write chapter ${(sortedChapters(target).at(-1)?.number ?? 0) + 1}`;
       setDock(`${micBtn(false)}<button class="btn" id="go">${esc(label)}</button>`);
       $("#go").onclick = go;
     }
@@ -934,15 +934,15 @@ async function screenTell() {
       location.hash = `#/u/${d.target}/write`;
       return;
     }
-    const ok = await confirmSheet({ title: "Start a new universe?", body: "The world, the cast and a quest that can run for many chapters get written from this idea. About a minute.", ok: "Start it" });
+    const ok = await confirmSheet({ title: "Start a new book?", body: "The world, the characters and a quest that can run for many chapters get written from this idea. About a minute.", ok: "Start it" });
     if (!ok) return;
-    const out = await busy([{ label: "Building a new universe", run: () => story("create_universe", { idea: `${d.text}\n\nSummary: ${r.for_parent}`, main_kid: (cache.family ?? []).some((m) => m.name === d.kid && m.role === "kid") ? d.kid : undefined }) }],
+    const out = await busy([{ label: "Starting a new book", run: () => story("create_universe", { idea: `${d.text}\n\nSummary: ${r.for_parent}`, main_kid: (cache.family ?? []).some((m) => m.name === d.kid && m.role === "kid") ? d.kid : undefined }) }],
       { kid: d.kid, hint: "About a minute. You can set the phone down." });
     cache.universes = null;
     store.set("pendingIdea", { text: r.for_parent, kid: d.kid, universe_id: out.universe.id });
     saveTell({ kid: "", text: "", restated: null, target: null });
     location.hash = `#/u/${out.universe.id}`;
-    toast("New universe ready");
+    toast("New book ready");
   });
 
   const toggleMic = () => {
