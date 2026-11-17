@@ -146,6 +146,7 @@ async function call(fn, action, params = {}) {
 const story = (action, params) => call("story", action, params);
 const produce = (action, params) => call("produce", action, params);
 const familyApi = (action, params) => call("family", action, params);
+const libraryApi = (action, params) => call("library", action, params);
 
 const cache = { universes: null, family: null, voices: null, covers: null };
 async function getFamily(fresh = false) {
@@ -238,13 +239,13 @@ async function busy(steps, opts = {}) {
 
 function closeSheet() { sheet.onclick = null; sheet.hidden = true; sheet.innerHTML = ""; }
 
-function confirmSheet({ title, body, ok = "OK", cancel = "Not now" }) {
+function confirmSheet({ title, body, ok = "OK", cancel = "Not now", danger = false }) {
   return new Promise((resolve) => {
     sheet.hidden = false;
     sheet.innerHTML = `<div class="panel" role="dialog" aria-modal="true" aria-label="${esc(title)}"><span class="grab"></span>
       <h2>${esc(title)}</h2>${body ? `<div class="soft">${body}</div>` : ""}
       <button class="btn quiet" data-cancel>${esc(cancel)}</button>
-      <button class="btn" data-ok>${esc(ok)}</button></div>`;
+      <button class="btn${danger ? " danger" : ""}" data-ok>${esc(ok)}</button></div>`;
     const done = (v) => { closeSheet(); resolve(v); };
     $("[data-ok]", sheet).onclick = () => done(true);
     $("[data-cancel]", sheet).onclick = () => done(false);
@@ -537,7 +538,8 @@ async function screenUniverse(id) {
         ${b.story_so_far?.length ? `<div><b>Story so far</b><ul>${b.story_so_far.map((s) => `<li>Chapter ${s.chapter}: ${esc(s.summary)}</li>`).join("")}</ul></div>` : ""}
         ${b.open_threads?.length ? `<div><b>Open threads</b><ul>${b.open_threads.map((r) => `<li>${esc(r)}</li>`).join("")}</ul></div>` : ""}
         ${b.lessons_taught?.length ? `<div><b>Lessons taught</b><ul>${b.lessons_taught.map((r) => `<li>${esc(r)}</li>`).join("")}</ul></div>` : ""}
-      </div></details>`;
+      </div></details>
+    <div class="danger-zone"><button class="link" id="delBook">Delete this book</button></div>`;
 
   setDock(`${backBtn("#/library")}<a class="btn" href="#/u/${id}/write">What happens next?</a>`);
 
@@ -556,6 +558,21 @@ async function screenUniverse(id) {
     toast("Story memory updated");
     screenUniverse(id);
   })));
+
+  $("#delBook").onclick = () => attempt(async () => {
+    const n = (u.chapters ?? []).length;
+    const ok = await confirmSheet({
+      title: `Delete ${u.title}?`,
+      body: `This deletes the book, ${n === 1 ? "its chapter, " : n === 2 ? "both chapters, " : n ? `all ${n} chapters, ` : ""}every recording, the cover and its story memory. It can't be undone.`,
+      ok: "Delete the book", cancel: "Keep it", danger: true,
+    });
+    if (!ok) return;
+    if (now.chapter?.universe_id === id) { audio.pause(); audio.removeAttribute("src"); now.chapter = null; now.universe = null; }
+    await busy([{ label: "Deleting the book", run: () => libraryApi("delete_book", { universe_id: id }) }], { hint: "A few seconds." });
+    cache.universes = null; cache.covers = null;
+    location.hash = "#/library";
+    toast(`${u.title} was deleted`);
+  });
 
   $("#newCover").onclick = () => attempt(async () => {
     await busy([{ label: "Painting a cover", run: () => produce("cover", { universe_id: id, style: $("#style").value.trim() || undefined }) }], { kicker: u.title });
@@ -750,6 +767,7 @@ async function screenChapter(id) {
         <details id="full"><summary><span class="link" style="display:inline-flex;align-items:center">Read the whole chapter</span></summary>
           <div class="script">${script.map((l, i) => `<div class="line ${flagged.has(i) ? "flag" : ""}" id="line-${i}">
             <span class="no">${i}</span><span class="who">${esc(speakerLabel(l.speaker))}</span><p class="story">${scriptText(l.text)}</p></div>`).join("")}</div></details></div>` : ""}
+      <div class="danger-zone"><button class="link" id="delChapter">Delete this chapter</button></div>
     </div>`;
 
   $$("[data-line]").forEach((b) => (b.onclick = () => {
@@ -765,6 +783,24 @@ async function screenChapter(id) {
     toast("Story memory updated");
     screenChapter(id);
   })));
+
+  $("#delChapter").onclick = () => attempt(async () => {
+    const later = (u.chapters ?? []).filter((c) => c.number > ch.number).length;
+    const remembered = ch.status === "approved" || ch.status === "produced";
+    const ok = await confirmSheet({
+      title: `Delete chapter ${ch.number}?`,
+      body: `<p style="margin:0 0 8px">${esc(ch.title ?? "This chapter")} and its recordings will be deleted. It can't be undone.</p>`
+        + (later ? `<p style="margin:0 0 8px">The ${later === 1 ? "chapter after it moves" : `${later} chapters after it move`} up one number.</p>` : "")
+        + (remembered ? `<p style="margin:0">The story memory forgets what happened in it, so later chapters won't bring it up.</p>` : ""),
+      ok: "Delete the chapter", cancel: "Keep it", danger: true,
+    });
+    if (!ok) return;
+    if (now.chapter?.id === id) { audio.pause(); audio.removeAttribute("src"); now.chapter = null; now.universe = null; }
+    await busy([{ label: "Deleting the chapter", run: () => libraryApi("delete_chapter", { chapter_id: id }) }], { hint: "A few seconds." });
+    cache.universes = null;
+    location.hash = `#/u/${u.id}`;
+    toast(`Chapter ${ch.number} was deleted`);
+  });
 
   const checkStep = { label: "Grown-up check", run: () => story("review_chapter", { chapter_id: id }) };
   const revise = (needNotes) => attempt(async () => {

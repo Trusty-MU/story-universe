@@ -54,6 +54,12 @@ Actions: `media` (signed URLs: current cover per universe, plus `audio_url`/`pre
 ### `family` (supabase/functions/family/index.ts)
 Actions: `list` (kids first, youngest first, then parents and others), `add` (`{name, role: kid|parent|other, birth_month?: 'YYYY-MM', notes?}`; validates, friendly error on duplicate names), `update` (`{id, ...fields}`). Same passcode check. The app uses it for the family chips and the "+ Add someone" sheet on Capture and Chapter studio.
 
+### `library` (supabase/functions/library/index.ts)
+Delete actions (the app shows "Delete this book" at the bottom of a book page and "Delete this chapter" at the bottom of a chapter page, each behind a confirm sheet):
+- `delete_book` `{universe_id}`: removes the folder's files in `audio` and `covers`, the chapter reviews, then the universe row (cascades to characters, chapters, book_versions, covers, songs).
+- `delete_chapter` `{chapter_id}`: story memory first (if this chapter's accepted update is the newest, roll `universes.book` back to the previous accepted version; otherwise drop its `story_so_far` line and shift later numbers), deletes its book_versions, audio files and reviews, then renumbers later chapters down by one and moves their `chapter-N.mp3` / `chapter-N-preview.mp3` files to match.
+- Tested Nov 17, 2026 on a throwaway book (DB logic, renumbering and memory rollback). File removal and moves have not yet run against real recordings.
+
 ### `check-secrets`
 Reports only whether each secret is set. Safe to delete later.
 
