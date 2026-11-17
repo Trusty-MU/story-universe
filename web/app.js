@@ -793,7 +793,7 @@ async function screenChapter(id) {
       <div class="chips">${main ? `<span class="badge">For ${esc(main)}</span>` : ""}${ch.brief?.bedtime ? `<span class="badge">Bedtime</span>` : ""}<span class="badge">About ${minutes} min</span></div></div>
     ${pathHtml(st, true)}
     <div class="stack" style="margin-top:22px">
-      ${!r && status === "draft" ? `<div class="card tint-flame"><h3>Not checked yet</h3><p class="small" style="margin:6px 0 0">Every chapter gets a grown-up check for scariness, bedtime calm, age fit and family values before anyone hears it.</p></div>` : ""}
+      ${!r && status === "draft" ? `<div class="card tint-flame"><h3>Not checked yet</h3><p class="small" style="margin:6px 0 0">Every chapter gets a grown-up check for scariness, age fit and family values (and calm, when it's for bedtime) before anyone hears it.</p></div>` : ""}
       ${status !== "approved" && status !== "produced" ? checkCard() : ""}
       ${status === "approved" && pending.length ? pending.map((p) => `<div class="card tint-flame stack">
         <div class="kick" style="color:var(--bark)">Story memory update waiting</div>
@@ -908,7 +908,7 @@ async function screenChapter(id) {
     setDock(`${back}<button class="btn" id="a">Rewrite it</button>`);
     $("#a").onclick = () => revise(true);
   } else if (status === "approved") {
-    setDock(`${back}<div class="col"><button class="link" id="b">Hear a short sample first</button><button class="btn" id="a">Record it for tonight</button></div>`);
+    setDock(`${back}<div class="col"><button class="link" id="b">Hear a short sample first</button><button class="btn" id="a">Record it</button></div>`);
     $("#a").onclick = () => record(false);
     $("#b").onclick = () => record(true);
   } else if (status === "produced") {

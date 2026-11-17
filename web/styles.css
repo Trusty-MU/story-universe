@@ -399,7 +399,7 @@ body.night #tabs a[aria-current="page"] { color: var(--flame); }
 .ti-stamp { position: absolute; right: -6px; bottom: -18px; background: var(--ember); color: #fff; font: 700 16px var(--display); padding: 8px 16px; border-radius: 999px; transform: rotate(-6deg); animation: ti-stampin .45s var(--d) var(--ease) both; }
 @keyframes ti-stampin { from { opacity: 0; transform: rotate(-6deg) scale(1.8); } }
 
-/* 5 Hear it tonight, keep it forever: the shelf fills, play glows */
+/* 5 Hear it together, keep it forever: the shelf fills, play glows */
 .ti-shelf { flex-direction: column; justify-content: flex-end; gap: 0; padding-bottom: 6px; }
 .ti-books { position: relative; display: flex; align-items: flex-end; gap: 8px; }
 .ti-books span { width: 38px; height: 54px; border-radius: 8px; background: var(--c); animation: ti-up .5s var(--d) var(--ease) both; }
@@ -410,7 +410,8 @@ body.night #tabs a[aria-current="page"] { color: var(--flame); }
   .ti-art { zoom: .78; }
   .ti-text h2 { font-size: 29px; }
   .ti-text p { font-size: 16px; line-height: 1.5; }
-  .ti-slide { gap: 16px; }
+  .ti-slide { gap: 14px; }
+  .ti-fine { font-size: 13px !important; padding-top: 8px; }
 }
 .ti-next:focus:not(:focus-visible), .ti-back:focus:not(:focus-visible) { outline: none; }
 .ti-next:focus-visible, .ti-back:focus-visible, .ti-skip:focus-visible { outline: 3px solid var(--bark); outline-offset: 3px; }

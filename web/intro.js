@@ -44,7 +44,7 @@ const SLIDES = [
     night: true,
     kick: "Why Campfire",
     title: "People have always gathered round the fire to share stories and songs",
-    body: "It's where families pull up close and feel together. Campfire brings that circle to bedtime, even on nights someone is far from home.",
+    body: "It's where families pull up close and feel together. Campfire brings that circle into every part of the day: the car, the kitchen table, bedtime, even days someone is far from home.",
     art: `<div class="ti-art ti-camp">
       <span class="ti-star" style="left:12%;top:10%;--d:0s"></span><span class="ti-star" style="left:30%;top:2%;--d:.8s"></span>
       <span class="ti-star" style="left:70%;top:6%;--d:1.4s"></span><span class="ti-star" style="left:88%;top:22%;--d:.4s"></span>
@@ -76,7 +76,7 @@ const SLIDES = [
   {
     kick: "2 · Written",
     title: "Every idea becomes a book",
-    body: "A new idea starts a new book, or becomes the next chapter of one you already love. Characters, places and quests carry on, so tonight picks up where last night left off.",
+    body: "A new idea starts a new book, or becomes the next chapter of one you already love. Characters, places and quests carry on, so each chapter picks up right where the last one left off.",
     art: `<div class="ti-art ti-universe">
       <div class="ti-fan">
         <span class="ti-ch" style="--r:-13deg;--x:-46px;--d:.5s"></span><span class="ti-ch" style="--r:-5deg;--x:-20px;--d:.8s"></span><span class="ti-ch" style="--r:7deg;--x:30px;--d:1.1s"></span>
@@ -98,11 +98,11 @@ const SLIDES = [
   {
     kick: "3 · Checked",
     title: "A grown-up hears it first",
-    body: "Every chapter is checked for bedtime calm, the right age and your family's values. Nothing plays until you approve it.",
+    body: "Every chapter and song is checked: gentle, right for their age, true to your values. Nothing plays until you approve it.",
     fine: "You give the idea, the people and the lesson. Campfire uses AI to write it down and read it aloud, like a scribe. It never makes up a story on its own.",
     art: `<div class="ti-art ti-check">
       <div class="ti-card">
-        <div class="ti-row" style="--d:.2s"><b>${TICK}</b>Calm, sleepy ending</div>
+        <div class="ti-row" style="--d:.2s"><b>${TICK}</b>Gentle and kind</div>
         <div class="ti-row" style="--d:.6s"><b>${TICK}</b>Right for their age</div>
         <div class="ti-row" style="--d:1s"><b>${TICK}</b>Fits our family's values</div>
         <span class="ti-stamp" style="--d:1.5s">Approved</span>
@@ -112,8 +112,8 @@ const SLIDES = [
   {
     night: true,
     kick: "4 · Recorded",
-    title: "Hear it tonight. Keep it forever.",
-    body: "Every character gets a voice. Night by night your Library fills with stories they'll ask for again, and still have when they're grown.",
+    title: "Hear it together. Keep it forever.",
+    body: "Every character gets a voice. Story by story, your Library fills with stories and songs they'll ask for again, and still have when they're grown.",
     art: `<div class="ti-art ti-shelf">
       <div class="ti-fireglow"></div>
       <div class="ti-books">
